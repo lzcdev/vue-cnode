@@ -10,7 +10,6 @@
         <el-link :underline="false">登陆</el-link>
     </el-header>-->
 
-    <!-- <el-main class="middle"> -->
     <div class="container">
       <div class="main_content">
         <div class="type_header">
@@ -18,7 +17,7 @@
             :class="activeClass == index ? 'type type_active': 'type type_normal' "
             v-for="(item, index) in typeList"
             :key="index"
-            @click="getData(index)"
+            @click="getData(index, item.tab, 1, item.total)"
           >{{item.title}}</button>
         </div>
         <div class="main_item" v-for="item in array" :key="item.id">
@@ -28,7 +27,9 @@
             <span class="visit_count">{{item.visit_count}}</span>
           </div>
 
-          <div class="tab">{{item.tab == 'share' ? '分享': '问答'}}</div>
+          <div
+            :class="item.good == true || item.top == true ? 'tab tab_good' : 'tab tab_normal'"
+          >{{item.top == true ? '置顶' : (item.good == true ? '精华' : (item.tab == 'share' ? '分享': '问答'))}}</div>
           <div class="title">
             <a>{{item.title}}</a>
           </div>
@@ -36,7 +37,14 @@
         </div>
 
         <div class="pagination">
-          <el-pagination background layout="prev, pager, next" :pager-count="5" :total="50"></el-pagination>
+          <el-pagination
+            @current-change="handleCurrentChange"
+            background
+            :current-page="page"
+            layout="prev, pager, next"
+            :page-size="40"
+            :total="total"
+          ></el-pagination>
         </div>
       </div>
 
@@ -47,16 +55,23 @@
           <el-button @click="getData">通过 GitHub 登陆</el-button>
         </el-card>
       </div>
-      <!-- </el-main> -->
     </div>
 
-    <!-- <el-footer height="200px">
-        <div>RSS | 源码地址</div>
-        <div>CNode 社区为国内最专业的 Node.js 开源技术社区，致力于 Node.js 的技术研究。</div>
-        <div>服务器赞助商为 ucloud ，存储赞助商为 七牛云存储 ，由 alinode 提供应用性能服务。</div>
-        <div>新手搭建 Node.js 服务器，推荐使用无需备案的 DigitalOcean(https://www.digitalocean.com/)</div>
-    </el-footer>-->
-    <!-- </el-container> -->
+    <div class="footer">
+      <div>
+        <el-link href="https://cnodejs.org/rss" :underline="false">RSS</el-link>
+        <el-divider direction="vertical"></el-divider>
+        <el-link href="https://github.com/lzcdev/vue-cnode" :underline="false">源码地址</el-link>
+      </div>
+      <div class="footer_text">CNode 社区为国内最专业的 Node.js 开源技术社区，致力于 Node.js 的技术研究。</div>
+      <div class="footer_text">
+        新手搭建 Node.js 服务器，推荐使用无需备案的
+        <el-link
+          type="primary"
+          href="https://www.digitalocean.com/"
+        >DigitalOcean(https://www.digitalocean.com/)</el-link>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -66,30 +81,46 @@ export default {
     return {
       array: [],
       activeClass: 0,
+      index: 0,
+      tab: "all",
+      page: 1,
+      total: 2500,
       typeList: [
-        { index: 0, title: "全部" },
-        { index: 1, title: "精华" },
-        { index: 2, title: "分享" },
-        { index: 2, title: "问答" },
-        { index: 2, title: "招聘" },
-        { index: 2, title: "客户端测试" }
+        { index: 0, title: "全部", tab: "all", total: 2500 },
+        { index: 1, title: "精华", tab: "good", total: 720 },
+        { index: 2, title: "分享", tab: "share", total: 1160 },
+        { index: 3, title: "问答", tab: "ask", total: 1400 },
+        { index: 4, title: "招聘", tab: "job", total: 400 },
+        { index: 5, title: "客户端测试", tab: "", total: 2500 }
       ]
     };
   },
   mounted() {
-    this.getData(0);
+    this.getData(this.index, this.tab, this.page, this.total);
   },
   methods: {
-    getData(index) {
+    getData(index, tab, page, total) {
       this.activeClass = index;
+      this.index = index;
+      this.tab = tab;
+      this.page = page;
+      this.total = total
+      var params = {
+        tab: tab,
+        page: page
+      };
       this.$http({
         method: "get",
         url: "https://cnodejs.org/api/v1/topics",
-        data: {}
+        params: params
       }).then(res => {
         console.log(res);
         this.array = res.data.data;
       });
+    },
+    handleCurrentChange(val) {
+      this.page = val;
+      this.getData(this.index, this.tab, this.page, this.total);
     },
     getDate(time) {
       var year = parseInt(time.substring(0, 4));
@@ -121,23 +152,6 @@ export default {
 
 
 <style>
-.el-header {
-  background-color: #444444;
-  color: #fff;
-  text-align: center;
-  line-height: 60px;
-  height: 60px;
-}
-.el-link {
-  margin: 0 40px;
-}
-.el-link.el-link--default {
-  color: #cccccc;
-}
-.el-main {
-  background-color: #e1e1e1;
-  height: 800px;
-}
 .container {
   display: flex;
   background-color: #e1e1e1;
@@ -151,7 +165,6 @@ export default {
   margin: 0 40px;
   min-width: 600px;
   width: 60%;
-
 }
 .title {
   width: 60%;
@@ -196,14 +209,20 @@ export default {
   text-align: center;
 }
 .tab {
-  color: #b4b4b4;
   margin: 0 5px;
   width: 40px;
   padding: 2px;
-  background-color: #e5e5e5;
   border-radius: 2px;
   text-align: center;
   font-size: 12px;
+}
+.tab_normal {
+  color: #b4b4b4;
+  background-color: #e5e5e5;
+}
+.tab_good {
+  color: #fff;
+  background-color: #46a0fc;
 }
 .reply_count {
   color: purple;
@@ -239,18 +258,26 @@ export default {
 }
 .type_normal {
   background-color: #f6f6f6;
-  color: #82bb23;
+  color: #46a0fc;
 }
 .type_normal:hover {
-  color: #60c0dc;
+  color: #60C0DC;
 }
 .type_active {
-  background-color: #82bb23;
+  background-color: #46a0fc;
   color: #fff;
 }
 .pagination {
   padding: 10px 0;
   margin-bottom: 20px;
-  background-color: #82bb23;
+  background-color: #fff;
+}
+.footer {
+  padding: 40px;
+}
+.footer_text {
+  color: #ababab;
+  margin: 20px 0;
+  font-size: 14px;
 }
 </style>
