@@ -1,5 +1,3 @@
-## 预览地址
-[http://slimy-position.surge.sh/](http://slimy-position.surge.sh/)
 
 ## Project setup
 ```
